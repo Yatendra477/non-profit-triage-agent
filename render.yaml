@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: non-profit-triage-agent
+    env: docker
+    region: ohio
+    plan: free # Can be upgraded to 'starter' if memory limits are hit
+    branch: main
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false # Tells Render not to commit this value, but expect you to provide it via the dashboard
