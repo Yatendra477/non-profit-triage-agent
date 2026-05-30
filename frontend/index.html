@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HopeLink — Non-Profit Support Triage</title>
+  <meta name="description" content="AI-powered support triage system for non-profit organisations. Instantly classify, route, and respond to incoming messages." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ─── TOKENS ──────────────────────────────────────────────────────────── */
+    :root {
+      --bg:            #0a0e1a;
+      --surface:       #111827;
+      --surface-2:     #1a2235;
+      --border:        rgba(255,255,255,0.08);
+      --accent-1:      #7c3aed;
+      --accent-2:      #06b6d4;
+      --accent-grad:   linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%);
+      --text-primary:  #f1f5f9;
+      --text-secondary:#94a3b8;
+      --text-muted:    #475569;
+      --success:       #10b981;
+      --warning:       #f59e0b;
+      --danger:        #ef4444;
+      --radius:        14px;
+      --radius-sm:     8px;
+      --shadow:        0 20px 60px rgba(0,0,0,0.5);
+      --glow:          0 0 40px rgba(124,58,237,0.25);
+      --transition:    0.25s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    /* ─── RESET ───────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ─── BACKGROUND PATTERN ─────────────────────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: -1;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% -10%, rgba(124,58,237,0.18) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 100%, rgba(6,182,212,0.12) 0%, transparent 60%);
+    }
+
+    /* ─── LAYOUT ──────────────────────────────────────────────────────────── */
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 1.5rem 5rem;
+    }
+
+    /* ─── HEADER ──────────────────────────────────────────────────────────── */
+    header {
+      text-align: center;
+      padding: 3.5rem 0 2.5rem;
+    }
+
+    .logo-mark {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 64px; height: 64px;
+      border-radius: 18px;
+      background: var(--accent-grad);
+      box-shadow: var(--glow);
+      margin-bottom: 1.25rem;
+      animation: float 4s ease-in-out infinite;
+    }
+    .logo-mark svg { width: 32px; height: 32px; }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-6px); }
+    }
+
+    h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(2rem, 5vw, 2.75rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+    }
+    h1 em {
+      font-style: italic;
+      background: var(--accent-grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .header-sub {
+      margin-top: 0.75rem;
+      color: var(--text-secondary);
+      font-size: 1.05rem;
+      font-weight: 300;
+    }
+
+    /* ─── GLASS CARD ──────────────────────────────────────────────────────── */
+    .card {
+      background: rgba(17,24,39,0.6);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      padding: 1.75rem;
+      box-shadow: var(--shadow);
+    }
+
+    /* ─── INPUT AREA ──────────────────────────────────────────────────────── */
+    .input-section { margin-bottom: 1.5rem; }
+
+    .input-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 0.75rem;
+    }
+    .input-label .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--accent-grad);
+    }
+
+    textarea#messageInput {
+      width: 100%;
+      min-height: 130px;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 1rem;
+      line-height: 1.6;
+      padding: 1rem 1.125rem;
+      resize: vertical;
+      transition: border-color var(--transition), box-shadow var(--transition);
+      outline: none;
+    }
+    textarea#messageInput:focus {
+      border-color: var(--accent-1);
+      box-shadow: 0 0 0 3px rgba(124,58,237,0.2);
+    }
+    textarea#messageInput::placeholder { color: var(--text-muted); }
+
+    .input-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 0.5rem;
+    }
+    #charCount { font-size: 0.8rem; color: var(--text-muted); }
+
+    /* Session ID strip */
+    .session-strip {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+    .session-strip label { font-size: 0.8rem; color: var(--text-muted); white-space: nowrap; }
+    .session-strip input {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      font-family: inherit;
+      font-size: 0.8rem;
+      padding: 0.35rem 0.7rem;
+      outline: none;
+    }
+
+    /* ─── SUBMIT BUTTON ───────────────────────────────────────────────────── */
+    button#submitBtn {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: var(--accent-grad);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 0.75rem 2rem;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity var(--transition), transform var(--transition), box-shadow var(--transition);
+      box-shadow: 0 4px 20px rgba(124,58,237,0.4);
+    }
+    button#submitBtn:hover:not(:disabled) {
+      opacity: 0.9;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 28px rgba(124,58,237,0.5);
+    }
+    button#submitBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ─── SPINNER ─────────────────────────────────────────────────────────── */
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2.5px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── RESULT SECTION ──────────────────────────────────────────────────── */
+    #resultSection {
+      display: none;
+      animation: slideUp 0.45s cubic-bezier(0.22,1,0.36,1);
+      margin-top: 1.5rem;
+    }
+    #resultSection.visible { display: flex; flex-direction: column; gap: 1.25rem; }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ─── CLASSIFICATION STRIP ────────────────────────────────────────────── */
+    .classify-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.9rem;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      border: 1px solid transparent;
+    }
+    .badge-intent {
+      background: rgba(124,58,237,0.15);
+      border-color: rgba(124,58,237,0.35);
+      color: #c4b5fd;
+    }
+    .badge-high {
+      background: rgba(239,68,68,0.15);
+      border-color: rgba(239,68,68,0.35);
+      color: #fca5a5;
+    }
+    .badge-medium {
+      background: rgba(245,158,11,0.15);
+      border-color: rgba(245,158,11,0.35);
+      color: #fcd34d;
+    }
+    .badge-low {
+      background: rgba(16,185,129,0.15);
+      border-color: rgba(16,185,129,0.35);
+      color: #6ee7b7;
+    }
+    .badge-route {
+      background: rgba(6,182,212,0.12);
+      border-color: rgba(6,182,212,0.3);
+      color: #67e8f9;
+    }
+    .badge-escalated {
+      background: rgba(239,68,68,0.2);
+      border-color: rgba(239,68,68,0.5);
+      color: #fca5a5;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
+      50%       { box-shadow: 0 0 0 6px rgba(239,68,68,0); }
+    }
+
+    /* ─── RESPONSE CARD ───────────────────────────────────────────────────── */
+    .response-card {
+      position: relative;
+      overflow: hidden;
+    }
+    .response-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--accent-grad);
+    }
+    .response-header {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 1rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+    .response-header .icon {
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      background: var(--accent-grad);
+      display: flex; align-items: center; justify-content: center;
+    }
+    #responseText {
+      font-size: 1.05rem;
+      line-height: 1.75;
+      color: var(--text-primary);
+    }
+
+    /* ─── ENTITIES TABLE ──────────────────────────────────────────────────── */
+    .section-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .entities-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 0.75rem;
+    }
+    .entity-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.75rem 1rem;
+      transition: border-color var(--transition);
+    }
+    .entity-item:hover { border-color: rgba(124,58,237,0.4); }
+    .entity-key {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 0.25rem;
+    }
+    .entity-val {
+      font-size: 0.92rem;
+      color: var(--text-primary);
+      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .entity-val.empty { color: var(--text-muted); font-style: italic; }
+
+    /* ─── EXAMPLE PILLS ───────────────────────────────────────────────────── */
+    .examples-section { margin-bottom: 1.5rem; }
+    .examples-label {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-bottom: 0.6rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .pills-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .pill {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.3rem 0.9rem;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .pill:hover {
+      border-color: rgba(124,58,237,0.5);
+      color: #c4b5fd;
+      background: rgba(124,58,237,0.1);
+    }
+
+    /* ─── ERROR TOAST ─────────────────────────────────────────────────────── */
+    #errorBox {
+      display: none;
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: var(--radius-sm);
+      padding: 1rem 1.25rem;
+      color: #fca5a5;
+      font-size: 0.9rem;
+      margin-top: 1rem;
+      animation: slideUp 0.3s ease;
+    }
+
+    /* ─── FOOTER ──────────────────────────────────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 3rem 0 1rem;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+    footer a { color: var(--text-muted); text-decoration: none; }
+    footer a:hover { color: var(--text-secondary); }
+
+    /* ─── RESPONSIVE ─────────────────────────────────────────────────────── */
+    @media (max-width: 600px) {
+      .classify-strip { flex-direction: column; align-items: flex-start; }
+      .entities-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <!-- ── HEADER ── -->
+    <header>
+      <div class="logo-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 21.593c-5.63-5.539-11-10.297-11-14.402C1 3.379 4.068 1 7.5 1c1.977 0 3.817.989 5 2.5C13.683 1.989 15.523 1 17.5 1c3.432 0 6.5 2.379 6.5 6.191 0 4.105-5.37 8.863-11 14.402z"/>
+        </svg>
+      </div>
+      <h1>HopeLink <em>Triage</em></h1>
+      <p class="header-sub">AI-powered support routing for non-profit organisations</p>
+    </header>
+
+    <!-- ── INPUT CARD ── -->
+    <div class="card input-section">
+
+      <!-- Example pills -->
+      <div class="examples-section">
+        <div class="examples-label">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Try an example:
+        </div>
+        <div class="pills-row" id="examplePills">
+          <div class="pill" data-msg="Hi, I'm Sarah Johnson from Chicago. I'd like to donate $500 to your flood relief program. My email is sarah@example.com. How do I proceed?">💰 Donation</div>
+          <div class="pill" data-msg="My name is James Carter, I want to volunteer every Saturday. I'm skilled in cooking and logistics. Case ref: VOL-2024-441. When can I start?">🤝 Volunteer</div>
+          <div class="pill" data-msg="URGENT — my elderly mother Maria Lopez (80) is stranded without food or water after the storm. We're in East Oakland. Please help immediately! Call +1-510-555-0192.">🚨 Emergency</div>
+          <div class="pill" data-msg="I submitted a donation 3 weeks ago (Ticket #DNR-8821) and I still haven't received a confirmation receipt. This is very disappointing.">😠 Complaint</div>
+          <div class="pill" data-msg="Hello, could you tell me what programs you currently run for youth education? I'd like to learn more before I decide to volunteer.">❓ General Inquiry</div>
+        </div>
+      </div>
+
+      <div class="input-label"><span class="dot"></span> Support Message</div>
+      <textarea id="messageInput" placeholder="Type or paste a support message here — e.g. &quot;Hi, I'd like to volunteer every weekend helping with meal prep...&quot;" maxlength="4000"></textarea>
+
+      <div class="input-footer">
+        <span id="charCount">0 / 4000</span>
+      </div>
+
+      <div class="session-strip">
+        <label for="sessionInput">Session ID (optional):</label>
+        <input id="sessionInput" type="text" placeholder="e.g. user-abc123" />
+      </div>
+
+      <div style="margin-top:1rem; display:flex; justify-content:flex-end;">
+        <button id="submitBtn">
+          <svg id="btnIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+          <span id="btnLabel">Analyse Message</span>
+        </button>
+      </div>
+
+      <div id="errorBox"></div>
+    </div>
+
+    <!-- ── RESULTS SECTION ── -->
+    <div id="resultSection">
+
+      <!-- Classification + Route -->
+      <div class="card">
+        <div class="section-label">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Classification & Routing
+        </div>
+        <div class="classify-strip" id="classifyStrip">
+          <!-- filled by JS -->
+        </div>
+      </div>
+
+      <!-- AI Response -->
+      <div class="card response-card">
+        <div class="response-header">
+          <div class="icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          AI-Generated Response
+        </div>
+        <p id="responseText"></p>
+      </div>
+
+      <!-- Entities -->
+      <div class="card" id="entitiesCard">
+        <div class="section-label">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Extracted Entities
+        </div>
+        <div class="entities-grid" id="entitiesGrid">
+          <!-- filled by JS -->
+        </div>
+      </div>
+
+    </div><!-- /resultSection -->
+
+    <footer>
+      <p>HopeLink Triage v1.0 &nbsp;·&nbsp; Powered by <a href="https://groq.com/" target="_blank">Groq</a></p>
+    </footer>
+
+  </div><!-- /container -->
+
+  <script>
+    // ── CONFIG ──────────────────────────────────────────────────────────────
+    const API_URL = 'http://localhost:8000/triage';
+
+    // ── DOM REFS ─────────────────────────────────────────────────────────────
+    const textarea     = document.getElementById('messageInput');
+    const charCount    = document.getElementById('charCount');
+    const sessionInput = document.getElementById('sessionInput');
+    const submitBtn    = document.getElementById('submitBtn');
+    const btnIcon      = document.getElementById('btnIcon');
+    const btnLabel     = document.getElementById('btnLabel');
+    const resultSec    = document.getElementById('resultSection');
+    const classifyStrip= document.getElementById('classifyStrip');
+    const responseText = document.getElementById('responseText');
+    const entitiesGrid = document.getElementById('entitiesGrid');
+    const errorBox     = document.getElementById('errorBox');
+    const pills        = document.querySelectorAll('.pill');
+
+    // ── CHAR COUNTER ─────────────────────────────────────────────────────────
+    textarea.addEventListener('input', () => {
+      charCount.textContent = `${textarea.value.length} / 4000`;
+    });
+
+    // ── EXAMPLE PILLS ────────────────────────────────────────────────────────
+    pills.forEach(pill => {
+      pill.addEventListener('click', () => {
+        textarea.value = pill.dataset.msg;
+        charCount.textContent = `${textarea.value.length} / 4000`;
+        textarea.focus();
+      });
+    });
+
+    // ── HELPERS ───────────────────────────────────────────────────────────────
+    function urgencyClass(urgency) {
+      return { High: 'badge-high', Medium: 'badge-medium', Low: 'badge-low' }[urgency] || 'badge-low';
+    }
+
+    function urgencyIcon(urgency) {
+      return { High: '🔴', Medium: '🟡', Low: '🟢' }[urgency] || '🟢';
+    }
+
+    function intentIcon(intent) {
+      const map = {
+        'Donation': '💰', 'Volunteer': '🤝',
+        'Complaint': '😠', 'Emergency Help': '🚨', 'General Inquiry': '❓'
+      };
+      return map[intent] || '📩';
+    }
+
+    function routeLabel(route) {
+      const map = {
+        human_agent: '🧑‍💼 Human Agent',
+        finance_team: '💼 Finance Team',
+        volunteer_team: '🤝 Volunteer Team',
+        general_support: '💬 General Support',
+      };
+      return map[route] || route;
+    }
+
+    function setLoading(loading) {
+      submitBtn.disabled = loading;
+      const currentIcon = document.getElementById('btnIcon');
+      if (loading) {
+        if (currentIcon) currentIcon.outerHTML = '<div class="spinner" id="btnIcon"></div>';
+        btnLabel.textContent = 'Analysing…';
+      } else {
+        if (currentIcon) currentIcon.outerHTML = `
+          <svg id="btnIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>`;
+        btnLabel.textContent = 'Analyse Message';
+      }
+    }
+
+    function showError(msg) {
+      errorBox.textContent = `⚠ ${msg}`;
+      errorBox.style.display = 'block';
+    }
+
+    function hideError() {
+      errorBox.style.display = 'none';
+    }
+
+    // ── RENDER RESULTS ────────────────────────────────────────────────────────
+    function renderResults(data) {
+      // Classification strip
+      classifyStrip.innerHTML = `
+        <span class="badge badge-intent">${intentIcon(data.intent)} ${data.intent}</span>
+        <span class="badge ${urgencyClass(data.urgency)}">${urgencyIcon(data.urgency)} ${data.urgency} Urgency</span>
+        <span class="badge badge-route">→ ${routeLabel(data.route)}</span>
+        ${data.escalated ? '<span class="badge badge-escalated">⚡ Escalated</span>' : ''}
+      `;
+
+      // Response
+      responseText.textContent = data.response;
+
+      // Entities
+      const entityLabels = {
+        full_name: 'Full Name', phone_number: 'Phone',
+        email: 'Email', location: 'Location',
+        case_id: 'Case ID', date: 'Date',
+      };
+      entitiesGrid.innerHTML = Object.entries(data.entities)
+        .map(([key, val]) => `
+          <div class="entity-item">
+            <div class="entity-key">${entityLabels[key] || key}</div>
+            <div class="entity-val ${!val ? 'empty' : ''}">${val || 'Not found'}</div>
+          </div>
+        `).join('');
+
+      resultSec.classList.remove('visible');
+      resultSec.style.display = ''; // Clear inline styles
+      // Force reflow for re-animation
+      void resultSec.offsetWidth;
+      resultSec.classList.add('visible');
+    }
+
+    // ── SUBMIT ────────────────────────────────────────────────────────────────
+    submitBtn.addEventListener('click', async () => {
+      const message = textarea.value.trim();
+      if (message.length < 3) {
+        showError('Please enter at least 3 characters.');
+        return;
+      }
+      hideError();
+      setLoading(true);
+
+      const payload = { message };
+      const sessionId = sessionInput.value.trim();
+      if (sessionId) payload.session_id = sessionId;
+
+      try {
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ detail: res.statusText }));
+          const detail = err.detail || `HTTP ${res.status}`;
+          // Surface a helpful message for quota exhaustion
+          const isQuota = detail.toLowerCase().includes('quota') ||
+                          detail.toLowerCase().includes('resource_exhausted') ||
+                          detail.toLowerCase().includes('429') ||
+                          detail.toLowerCase().includes('rate');
+          if (isQuota) {
+            throw new Error('⏳ API quota limit reached. The free-tier Groq API has a capacity limit. Please wait a bit and try again.');
+          }
+          throw new Error(detail);
+        }
+
+        const data = await res.json();
+        renderResults(data);
+      } catch (err) {
+        showError(err.message || 'Failed to connect to the triage service. Is the server running?');
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    // Allow Ctrl+Enter to submit
+    textarea.addEventListener('keydown', e => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') submitBtn.click();
+    });
+  </script>
+</body>
+</html>

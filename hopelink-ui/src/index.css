@@ -1,0 +1,87 @@
+/* ============================================================
+   GLOBAL STYLES — HopeLink Triage UI
+   Design tokens, resets, scrollbar, and base typography
+   ============================================================ */
+
+/* Inter from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── CSS Variables ─────────────────────────────────────── */
+@layer base {
+  :root {
+    --color-bg:          #f8fafc;
+    --color-surface:     #ffffff;
+    --color-surface-2:   #f1f5f9;
+    --color-border:      #e2e8f0;
+    --color-text:        #0f172a;
+    --color-muted:       #64748b;
+    --color-brand:       #a855f7;
+    --color-brand-dark:  #9333ea;
+    --shadow-card: 0 1px 3px 0 rgb(0 0 0 / .07), 0 4px 16px -2px rgb(0 0 0 / .06);
+  }
+
+  .dark {
+    --color-bg:          #000000;
+    --color-surface:     #111111;
+    --color-surface-2:   #1a1a1a;
+    --color-border:      #2a2a2a;
+    --color-text:        #f1f5f9;
+    --color-muted:       #888888;
+    --color-brand:       #c084fc;
+    --color-brand-dark:  #a855f7;
+    --shadow-card: 0 1px 3px 0 rgb(0 0 0 / .5), 0 4px 20px -2px rgb(0 0 0 / .45);
+  }
+
+  * { box-sizing: border-box; }
+
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    transition: background-color 0.3s ease, color 0.3s ease;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* ── Custom scrollbar ──────────────────────────────────── */
+@layer utilities {
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track  { background: transparent; }
+  ::-webkit-scrollbar-thumb  { background: #cbd5e1; border-radius: 99px; }
+  .dark ::-webkit-scrollbar-thumb { background: #334155; }
+
+  /* Surface utility using CSS-var */
+  .surface   { background: var(--color-surface); }
+  .surface-2 { background: var(--color-surface-2); }
+  .border-base { border-color: var(--color-border); }
+  .text-base   { color: var(--color-text); }
+  .text-muted  { color: var(--color-muted); }
+}
+
+/* ── Textarea focus ring ───────────────────────────────── */
+textarea:focus, input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-brand);
+}
+
+/* ── Glass card base ───────────────────────────────────── */
+.glass-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-card);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.glass-card:hover {
+  box-shadow: var(--shadow-card), 0 0 0 1px var(--color-brand) / 0.15;
+}
